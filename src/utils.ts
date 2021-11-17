@@ -20,7 +20,7 @@ export const isJSONObjectString = (s: string): boolean => {
 // - try ... JSON.stringify / JSON.parse - Asks JavaScript engine to determine if valid JSON
 
 
-export const flattenJSONObject = (data: Record<string, any>): Record<string, any> => {
+export const flattenJSONObject = (data: Record<string, any>, shouldIgnorePrefix: boolean): Record<string, any> => {
   if (!isJSONObject(data)) {
     throw TypeError('Cannot flatten non JSON arguments')
   }
@@ -38,7 +38,8 @@ export const flattenJSONObject = (data: Record<string, any>): Record<string, any
       let isEmpty = true
       for (const p in cur) {
         isEmpty = false
-        recurse(cur[p], prop ? prop + '_' + p : p)
+        const prefix = prop && shouldIgnorePrefix ? '' : prop + '_'
+        recurse(cur[p], prop ? prefix + p : p)
       }
       if (isEmpty && prop)
         result[prop] = {}

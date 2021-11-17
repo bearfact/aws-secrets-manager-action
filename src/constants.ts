@@ -4,5 +4,6 @@ export enum Inputs {
   AWS_SESSION_TOKEN = 'aws-session-token',
   AWS_REGION = 'aws-region',
   SECRETS = 'secrets',
-  PARSE_JSON = 'parse-json'
+  PARSE_JSON = 'parse-json',
+  IGNORE_PREFIX = 'ignore-prefix',
 }

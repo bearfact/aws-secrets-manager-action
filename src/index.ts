@@ -8,6 +8,8 @@ const inputSecretNames: string[] = [...new Set(core.getInput(Inputs.SECRETS).spl
 // Check if any secret name contains a wildcard '*'
 const hasWildcard: boolean = inputSecretNames.some(secretName => secretName.includes('*'))
 const shouldParseJSON = (core.getInput(Inputs.PARSE_JSON).trim().toLowerCase() === 'true')
+const shouldIgnorePrefix = (core.getInput(Inputs.IGNORE_PREFIX).trim().toLowerCase() === 'true')
+
 const AWSConfig = {
   accessKeyId: core.getInput(Inputs.AWS_ACCESS_KEY_ID),
   secretAccessKey: core.getInput(Inputs.AWS_SECRET_ACCESS_KEY),
@@ -54,7 +56,10 @@ const listSecrets = (secretsManagerClient: SecretsManager): Promise<Array<string
   })
 }
 
-const getSecretValueMap = (secretsManagerClient: SecretsManager, secretName: string, shouldParseJSON = false) => {
+const getSecretValueMap = (
+  secretsManagerClient: SecretsManager,
+  secretName: string, shouldParseJSON = false,
+  shouldIgnorePrefix = false) => {
   return new Promise((resolve, reject) => {
     getSecretValue(secretsManagerClient, secretName)
       .then(data => {
@@ -76,7 +81,7 @@ const getSecretValueMap = (secretsManagerClient: SecretsManager, secretName: str
           const secretJSON = JSON.parse(secretValue)
           const secretJSONWrapped = {}
           secretJSONWrapped[secretName] = secretJSON
-          const secretJSONFlattened = flattenJSONObject(secretJSONWrapped)
+          const secretJSONFlattened = flattenJSONObject(secretJSONWrapped, shouldIgnorePrefix)
           secretValueMap = secretJSONFlattened
         }
         // Else, injected secrets will be of the form 'mySecret' = '{ "foo": "bar" }' (raw secret value string)
@@ -160,7 +165,7 @@ if (hasWildcard) {
   getSecretNamesToFetch(secretsManagerClient, inputSecretNames)
     .then(secretNamesToFetch => {
       secretNamesToFetch.forEach((secretName) => {
-        getSecretValueMap(secretsManagerClient, secretName, shouldParseJSON).then(map => {
+        getSecretValueMap(secretsManagerClient, secretName, shouldParseJSON, shouldIgnorePrefix).then(map => {
           injectSecretValueMapToEnvironment(map, core)
         })
       })
@@ -170,7 +175,7 @@ if (hasWildcard) {
     })
 } else {
   inputSecretNames.forEach((secretName) => {
-    getSecretValueMap(secretsManagerClient, secretName, shouldParseJSON)
+    getSecretValueMap(secretsManagerClient, secretName, shouldParseJSON, shouldIgnorePrefix)
       .then(map => {
         injectSecretValueMapToEnvironment(map, core)
       })
